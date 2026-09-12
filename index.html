@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Habits Analyzer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f4f6fa;
+    color: #1a2233;
+    line-height: 1.55;
+    padding: 40px 20px;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 14px;
+    padding: 40px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+
+  h1 {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .subtitle {
+    color: #556;
+    margin-bottom: 6px;
+  }
+
+  .note {
+    font-size: 13px;
+    color: #889;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eef0f4;
+  }
+
+  .question {
+    margin-bottom: 22px;
+  }
+
+  .question label.q-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 15px;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .options label {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border: 1px solid #dfe3eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 14px;
+  }
+
+  .options label:hover {
+    border-color: #2e6bff;
+    background: #f6f9ff;
+  }
+
+  .options input[type="radio"] {
+    margin-right: 10px;
+    accent-color: #2e6bff;
+  }
+
+  button {
+    background: #2e6bff;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.15s;
+  }
+
+  button:hover { background: #1c53d8; }
+
+  #results { display: none; }
+
+  .verdict {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 20px 0 24px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    background: #eef4ff;
+    color: #1c53d8;
+  }
+
+  .columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 600px) {
+    .columns { grid-template-columns: 1fr; }
+    .container { padding: 24px; }
+  }
+
+  .card {
+    background: #f9fafc;
+    border-radius: 10px;
+    padding: 18px;
+  }
+
+  .card h3 {
+    font-size: 14px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .card.strengths h3 { color: #1e8e4a; }
+  .card.weak h3 { color: #c0392b; }
+
+  .habit {
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+
+  .habit strong { display: block; margin-bottom: 2px; }
+  .habit .answer { color: #667; font-style: italic; }
+  .habit .why { font-size: 12px; color: #889; margin-top: 4px; }
+
+  .suggestion {
+    background: #fff8e6;
+    border-left: 4px solid #f0b429;
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-size: 15px;
+    margin-bottom: 20px;
+  }
+
+  .suggestion strong { color: #a06800; }
+
+  .footer {
+    font-size: 12px;
+    color: #889;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #eef0f4;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📚 Study Habits Analyzer</h1>
+  <p class="subtitle">Answer a few questions about your study habits. You'll get feedback based on general findings from published research.</p>
+  <p class="note">This tool is a mirror, not a grade prediction. The scores are illustrative and reflect general trends, not a fitted model.</p>
+
+  <form id="quiz"></form>
+
+  <button type="button" onclick="showResults()">See my results</button>
+
+  <div id="results">
+    <div class="verdict" id="verdict"></div>
+
+    <div class="columns">
+      <div class="card strengths">
+        <h3>✅ Strengths</h3>
+        <div id="strengths"></div>
+      </div>
+      <div class="card weak">
+        <h3>⚠️ Weak spots</h3>
+        <div id="weaknesses"></div>
+      </div>
+    </div>
+
+    <div class="suggestion" id="suggestion"></div>
+
+    <p class="footer">Scores are illustrative and reflect general trends in published research. This is not medical or academic advice.</p>
+  </div>
+</div>
+
+<script>
+const habits = [
+  { category: "Study schedule", question: "How often do you study in short sessions spread across the week?",
+    options: [
+      { text: "Almost never", score: -2 },
+      { text: "Sometimes", score: 0 },
+      { text: "Most days", score: 2 }
+    ],
+    note: "Spaced practice is one of the most consistent findings in learning research." },
+
+  { category: "Sleep", question: "On average how many hours do you sleep on a normal night?",
+    options: [
+      { text: "Less than 6", score: -2 },
+      { text: "6 to 7", score: 0 },
+      { text: "7 to 9", score: 2 },
+      { text: "More than 9", score: 1 }
+    ],
+    note: "Sleep deprivation is linked to worse memory consolidation and test performance." },
+
+  { category: "Active recall", question: "How do you usually revise for exams?",
+    options: [
+      { text: "Mostly rereading notes", score: -2 },
+      { text: "Mix of rereading and testing", score: 0 },
+      { text: "Mostly practice questions and self testing", score: 2 }
+    ],
+    note: "Rereading feels productive but produces weaker retention than testing yourself." },
+
+  { category: "Class attendance", question: "How often do you attend lectures or watch the recordings?",
+    options: [
+      { text: "Rarely", score: -2 },
+      { text: "Sometimes", score: 0 },
+      { text: "Almost always", score: 2 }
+    ],
+    note: "Attendance is one of the strongest single predictors of outcomes in published studies." },
+
+  { category: "Study environment", question: "Where do you usually study?",
+    options: [
+      { text: "In bed or on the couch", score: -1 },
+      { text: "At a desk or library", score: 1 }
+    ],
+    note: "Study environment is linked to focus and session quality." },
+
+  { category: "Phone use", question: "How often do you check your phone while studying?",
+    options: [
+      { text: "Every few minutes", score: -2 },
+      { text: "Occasionally", score: 0 },
+      { text: "Phone is away or on silent", score: 2 }
+    ],
+    note: "Task switching has a measurable cost on focus and retention." },
+
+  { category: "Exercise", question: "How many days per week do you do any physical activity?",
+    options: [
+      { text: "0 to 1", score: -1 },
+      { text: "2 to 3", score: 1 },
+      { text: "4 or more", score: 2 }
+    ],
+    note: "Regular exercise is linked to better mood and cognition in student populations." },
+
+  { category: "Planning", question: "Do you plan your week in advance?",
+    options: [
+      { text: "No, I wing it", score: -2 },
+      { text: "Sometimes", score: 0 },
+      { text: "Yes, most weeks", score: 2 }
+    ],
+    note: "Planning and goal setting are linked to better outcomes in self regulated learning research." },
+
+  { category: "Breaks", question: "How do you handle long study sessions?",
+    options: [
+      { text: "I push through without breaks", score: -1 },
+      { text: "I take breaks but lose track", score: 0 },
+      { text: "I take planned short breaks", score: 1 }
+    ],
+    note: "Short breaks reduce fatigue and improve sustained attention." },
+
+  { category: "Deadlines", question: "When do you usually start assignments?",
+    options: [
+      { text: "The night before", score: -2 },
+      { text: "A few days before", score: 1 },
+      { text: "Well in advance", score: 2 }
+    ],
+    note: "Distributed work across days produces better results than last minute work." },
+
+  { category: "Notes", question: "How do you take notes?",
+    options: [
+      { text: "I copy slides word for word", score: -1 },
+      { text: "I write my own summaries", score: 2 },
+      { text: "I don't really take notes", score: -1 }
+    ],
+    note: "Copying without processing produces weak notes." }
+];
+
+const quiz = document.getElementById("quiz");
+
+habits.forEach((h, i) => {
+  const div = document.createElement("div");
+  div.className = "question";
+  div.innerHTML = `<label class="q-label">${h.question}</label><div class="options">` +
+    h.options.map((o, j) => `
+      <label>
+        <input type="radio" name="q${i}" value="${j}">
+        ${o.text}
+      </label>
+    `).join("") + `</div>`;
+  quiz.appendChild(div);
+});
+
+function showResults() {
+  const answers = [];
+  let total = 0;
+
+  for (let i = 0; i < habits.length; i++) {
+    const picked = document.querySelector(`input[name="q${i}"]:checked`);
+    if (!picked) {
+      alert("Please answer every question first.");
+      return;
+    }
+    const opt = habits[i].options[parseInt(picked.value)];
+    answers.push({
+      category: habits[i].category,
+      answer: opt.text,
+      score: opt.score,
+      note: habits[i].note
+    });
+    total += opt.score;
+  }
+
+  let verdict;
+  if (total >= 6) verdict = "Strong habits overall. Keep doing what you are doing.";
+  else if (total >= 0) verdict = "Mixed habits. A couple of changes would help.";
+  else verdict = "Several habits are working against you. Pick one to fix this week.";
+
+  document.getElementById("verdict").textContent = verdict;
+
+  const sorted = [...answers].sort((a, b) => b.score - a.score);
+  const strengths = sorted.filter(a => a.score > 0).slice(0, 3);
+  const weaknesses = sorted.filter(a => a.score < 0).slice(0, 3);
+
+  const renderHabit = h => `
+    <div class="habit">
+      <strong>${h.category}</strong>
+      <span class="answer">${h.answer}</span>
+      <div class="why">${h.note}</div>
+    </div>`;
+
+  document.getElementById("strengths").innerHTML =
+    strengths.length ? strengths.map(renderHabit).join("") : "<p>None yet.</p>";
+
+  document.getElementById("weaknesses").innerHTML =
+    weaknesses.length ? weaknesses.map(renderHabit).join("") : "<p>No weak spots. Nice.</p>";
+
+  const suggestion = document.getElementById("suggestion");
+  if (weaknesses.length) {
+    const worst = [...answers].sort((a, b) => a.score - b.score)[0];
+    suggestion.innerHTML = `<strong>Try this week:</strong> focus on <strong>${worst.category}</strong>. Right now: <em>${worst.answer}</em>. Pick one small change here and stick to it for seven days.`;
+  } else {
+    suggestion.innerHTML = `<strong>Try this week:</strong> pick one strength and push it further.`;
+  }
+
+  document.getElementById("results").style.display = "block";
+  document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+}
+</script>
+</body>
+</html>
+
